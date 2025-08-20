@@ -1,0 +1,29 @@
+{
+  "name": "ecash-cli-wallet",
+  "version": "1.0.1",
+  "description": "A command-line eCash (XEC) wallet using minimal-xec-wallet",
+  "main": "xec-wallet.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node xec-wallet.js"
+  },
+  "bin": {
+    "xec-wallet": "./xec-wallet.js"
+  },
+  "keywords": [
+    "ecash",
+    "xec",
+    "wallet",
+    "cli",
+    "cryptocurrency"
+  ],
+  "author": "Stoyan Zhekov",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^12.1.0",
+    "minimal-xec-wallet": "^1.0.5",
+    "qrcode": "^1.5.4",
+    "qrcode-terminal": "^0.12.0"
+  }
+}

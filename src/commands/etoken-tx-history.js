@@ -33,7 +33,7 @@ class ETokenTxHistory {
 
       // Get token transaction history
       const txHistory = await this.getTokenTxHistory(flags.tokenId, walletName)
-      
+
       // Display transaction history
       await this.displayTxHistory(txHistory, flags.tokenId, walletName)
 
@@ -70,9 +70,12 @@ class ETokenTxHistory {
     try {
       // Load wallet data to get the address
       const walletData = await this.walletUtil.loadWallet(walletName)
-      
+
+      // Get analytics options to ensure proper hdPath usage
+      const analyticsOptions = await this.walletUtil.getAnalyticsOptions(walletName)
+
       // Create wallet instance from stored data
-      const wallet = new this.MinimalXecWallet(walletData.wallet.mnemonic)
+      const wallet = new this.MinimalXecWallet(walletData.wallet.mnemonic, analyticsOptions)
       await wallet.walletInfoPromise
       await wallet.initialize()
 
@@ -81,23 +84,23 @@ class ETokenTxHistory {
       if (!tokenData) {
         throw new Error(`Token ${tokenId} not found or not supported`)
       }
-      
+
       // Get general transaction history for the wallet
       const allTransactions = await wallet.getTransactions(wallet.walletInfo.xecAddress)
-      
+
       // Filter transactions that involve this specific token
       const tokenTransactions = []
-      
+
       // Get detailed transaction data to check for token entries
       for (const tx of allTransactions) {
         try {
           // Get detailed transaction data which includes tokenEntries
           const txData = await wallet.getTxData([tx.txid])
           const detailedTx = txData[0]
-          
+
           if (detailedTx && detailedTx.tokenEntries && detailedTx.tokenEntries.length > 0) {
             const hasToken = detailedTx.tokenEntries.some(entry => entry.tokenId === tokenId)
-            
+
             if (hasToken) {
               // Merge basic transaction info with detailed token data
               const mergedTx = {
@@ -116,7 +119,7 @@ class ETokenTxHistory {
         tokenData,
         transactions: tokenTransactions,
         walletAddress: wallet.walletInfo.xecAddress,
-        wallet: wallet
+        wallet
       }
     } catch (err) {
       throw new Error(`Failed to get token transaction history: ${err.message}`)
@@ -142,7 +145,7 @@ class ETokenTxHistory {
           case 'GENESIS':
             return 'GENESIS'
           case 'MINT':
-            return 'MINT' 
+            return 'MINT'
           case 'SEND':
             return 'SEND'
           case 'BURN':
@@ -159,13 +162,13 @@ class ETokenTxHistory {
       if (tokenEntry.intentionalBurnAtoms && tokenEntry.intentionalBurnAtoms > 0n) {
         return 'BURN'
       }
-      
+
       // Check if this looks like genesis (usually first tx with this token ID)
       if (tokenEntry.amounts && tokenEntry.amounts.length === 1 && tx.block?.height) {
         // Could be genesis if it's creating new tokens
         return 'SEND' // Default to SEND for most token transactions
       }
-      
+
       return 'SEND' // Default to SEND for token transactions
     } catch (err) {
       return 'UNKNOWN'
@@ -175,7 +178,7 @@ class ETokenTxHistory {
   // Format timestamp to readable date
   formatDate (timestamp) {
     if (!timestamp) return 'Unknown Date'
-    
+
     try {
       const date = new Date(timestamp * 1000)
       return date.toISOString().replace('T', ' ').slice(0, 19)
@@ -193,7 +196,7 @@ class ETokenTxHistory {
       const txid = tx.txid || 'Unknown'
       const isConfirmed = tx.block !== null
       const status = isConfirmed ? '' : ' (pending)'
-      
+
       let amount = 'tokens'
       let direction = ''
       const transactionDirection = await this.getTransactionDirection(tx, walletAddress, wallet)
@@ -201,11 +204,11 @@ class ETokenTxHistory {
       // Extract token-specific information from token entries
       if (tx.tokenEntries && tx.tokenEntries.length > 0) {
         const tokenEntry = tx.tokenEntries.find(entry => entry.tokenId === tokenId)
-        
+
         if (tokenEntry) {
           // Get token amount from the entry
           let tokenAtoms = 0n
-          
+
           if (tokenEntry.actualBurnAtoms && tokenEntry.actualBurnAtoms > 0n) {
             tokenAtoms = BigInt(tokenEntry.actualBurnAtoms)
             direction = 'BURNED'
@@ -238,7 +241,7 @@ class ETokenTxHistory {
 
       // Format based on transaction type and direction
       let formattedTx = `${index + 1}.  ${date}  ${type.padEnd(8)}`
-      
+
       if (type === 'GENESIS') {
         formattedTx += ` ${amount.padStart(12)} ${direction}`
       } else if (type === 'MINT') {
@@ -259,25 +262,25 @@ class ETokenTxHistory {
     }
   }
 
-  // Determine transaction direction from wallet's perspective  
+  // Determine transaction direction from wallet's perspective
   async getTransactionDirection (tx, walletAddress, wallet) {
     try {
       // Simple heuristic: Check if any outputs go to our wallet address
       // If yes, it's likely RECEIVE; if no outputs to us, it's likely SEND
-      
+
       if (!tx.outputs || tx.outputs.length === 0) {
         return 'UNKNOWN'
       }
-      
+
       let hasOutputToUs = false
-      
+
       // Check each output to see if it goes to our wallet
       for (const output of tx.outputs) {
         if (output.outputScript) {
           try {
             // Try to decode the output script to see if it matches our address
             const walletHash = walletAddress.replace('ecash:', '')
-            
+
             // For eCash P2PKH outputs, look for our address hash in the script
             if (output.outputScript.includes(walletHash)) {
               hasOutputToUs = true
@@ -289,7 +292,7 @@ class ETokenTxHistory {
           }
         }
       }
-      
+
       // If transaction has outputs to us, it's likely someone sent tokens TO us
       if (hasOutputToUs) {
         return 'RECEIVE'
@@ -363,11 +366,11 @@ class ETokenTxHistory {
       const mintCount = transactions.filter(tx => this.getTransactionType(tx, tokenId) === 'MINT').length
       const sendCount = transactions.filter(tx => this.getTransactionType(tx, tokenId) === 'SEND').length
       const burnCount = transactions.filter(tx => this.getTransactionType(tx, tokenId) === 'BURN').length
-      
+
       // Count by direction for SEND transactions
       let sentCount = 0
       let receivedCount = 0
-      
+
       for (const tx of transactions) {
         if (this.getTransactionType(tx, tokenId) === 'SEND') {
           const direction = await this.getTransactionDirection(tx, walletAddress, wallet)

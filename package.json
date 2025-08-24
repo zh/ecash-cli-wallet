@@ -5,7 +5,13 @@
   "main": "xec-wallet.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "mocha test/**/*.test.js --timeout 10000",
+    "test:unit": "mocha test/unit/**/*.test.js --timeout 10000",
+    "test:integration": "mocha test/integration/**/*.test.js --timeout 15000",
+    "test:e2e": "mocha test/e2e/**/*.test.js --timeout 30000",
+    "test:coverage": "nyc npm test",
+    "test:watch": "mocha test/**/*.test.js --timeout 10000 --watch",
+    "lint": "eslint --fix xec-wallet.js src test",
     "start": "node xec-wallet.js"
   },
   "bin": {
@@ -22,8 +28,20 @@
   "license": "MIT",
   "dependencies": {
     "commander": "^12.1.0",
-    "minimal-xec-wallet": "^1.0.5",
+    "minimal-xec-wallet": "^2.0.2",
     "qrcode": "^1.5.4",
     "qrcode-terminal": "^0.12.0"
+  },
+  "devDependencies": {
+    "chai": "^6.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-standard": "^17.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-n": "^16.6.2",
+    "eslint-plugin-promise": "^6.1.1",
+    "mocha": "^10.8.2",
+    "nyc": "^17.1.0",
+    "sinon": "^21.0.0",
+    "sinon-chai": "^4.0.1"
   }
 }

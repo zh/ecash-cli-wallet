@@ -60,8 +60,11 @@ class WalletOptimize {
   // Optimize wallet using the existing ConsolidateUtxos functionality
   async optimizeWallet (walletData, flags) {
     try {
+      // Get analytics options to ensure proper hdPath usage
+      const analyticsOptions = await this.walletUtil.getAnalyticsOptions(flags.name)
+
       // Create wallet instance from stored mnemonic
-      const xecWallet = new this.MinimalXecWallet(walletData.wallet.mnemonic)
+      const xecWallet = new this.MinimalXecWallet(walletData.wallet.mnemonic, analyticsOptions)
       await xecWallet.walletInfoPromise
 
       // Initialize to get UTXOs

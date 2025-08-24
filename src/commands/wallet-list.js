@@ -20,7 +20,7 @@ class WalletList {
       console.log('Listing XEC wallets...\n')
 
       const wallets = await this.walletUtil.listWallets()
-      
+
       if (wallets.length === 0) {
         console.log('No wallets found.')
         console.log('Create a new wallet with: node xec-wallet.js wallet-create -n <name>')
@@ -39,7 +39,7 @@ class WalletList {
   displayWallets (wallets) {
     try {
       console.log(`Found ${wallets.length} wallet${wallets.length === 1 ? '' : 's'}:\n`)
-      
+
       wallets.forEach((wallet, index) => {
         console.log(`${index + 1}. ${wallet.name}`)
         console.log(`   Address: ${wallet.xecAddress}`)

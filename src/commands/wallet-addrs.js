@@ -37,7 +37,7 @@ class WalletAddrs {
 
       // Load wallet data
       const walletData = await this.walletUtil.loadWallet(flags.name)
-      
+
       // Display address information
       await this.displayAddresses(walletData, flags, { showXec, showWif })
 
@@ -57,7 +57,6 @@ class WalletAddrs {
 
     return true
   }
-
 
   // Generate smaller QR code that fits terminal window
   async generateSmallQR (text) {
@@ -82,28 +81,31 @@ class WalletAddrs {
     try {
       const { showXec, showWif } = options
       const xecAddress = walletData.wallet.xecAddress
-      
+
       // Get WIF if needed
       let wifKey = null
       if (showWif) {
-        const xecWallet = new this.MinimalXecWallet(walletData.wallet.mnemonic)
+        // Get analytics options to ensure proper hdPath usage
+        const analyticsOptions = await this.walletUtil.getAnalyticsOptions(flags.name)
+        const xecWallet = new this.MinimalXecWallet(walletData.wallet.mnemonic, analyticsOptions)
         await xecWallet.walletInfoPromise
         // Export as compressed WIF (starts with L/K for mainnet)
         wifKey = xecWallet.exportPrivateKeyAsWIF(true, false)
       }
 
-      console.log('Primary Address (HD Path: m/44\'/899\'/0\'/0/0):')
-      
+      const hdPath = walletData.wallet.hdPath || "m/44'/899'/0'/0/0"
+      console.log(`Primary Address (HD Path: ${hdPath}):`)
+
       // Show XEC address
       if (showXec) {
         console.log(`   XEC Address: ${xecAddress}`)
-        console.log(`   (Same address works for XEC and eTokens)`)
+        console.log('   (Same address works for XEC and eTokens)')
         if (flags.qr) {
           console.log('\nXEC Address QR Code:')
           await this.generateSmallQR(xecAddress)
         }
       }
-      
+
       // Show WIF private key
       if (showWif) {
         console.log(`   WIF Private Key: ${wifKey}`)
@@ -113,21 +115,23 @@ class WalletAddrs {
         }
         console.log('\nWARNING: Keep this private key secure! Anyone with this key can access your funds.')
       }
-      
+
       console.log()
 
       // Show additional HD addresses if requested
       if (flags.index !== undefined) {
         console.log('Additional HD Addresses:')
-        
-        const xecWallet = new this.MinimalXecWallet(walletData.wallet.mnemonic)
+
+        // Get analytics options to ensure proper hdPath usage
+        const analyticsOptions = await this.walletUtil.getAnalyticsOptions(flags.name)
+        const xecWallet = new this.MinimalXecWallet(walletData.wallet.mnemonic, analyticsOptions)
         await xecWallet.walletInfoPromise
 
         const hdIndex = parseInt(flags.index) || 1
         const keyPair = await xecWallet.getKeyPair(hdIndex)
-        
+
         console.log(`   HD Index ${hdIndex}:`)
-        
+
         if (showXec) {
           console.log(`   XEC: ${keyPair.xecAddress}`)
           if (flags.qr) {
@@ -135,7 +139,7 @@ class WalletAddrs {
             await this.generateSmallQR(keyPair.xecAddress)
           }
         }
-        
+
         if (showWif) {
           // Convert hex private key to WIF format (compressed, mainnet)
           // getKeyPair returns hex private key in the 'wif' property
@@ -147,7 +151,7 @@ class WalletAddrs {
           }
           console.log('\nWARNING: Keep this private key secure!')
         }
-        
+
         console.log()
       }
 

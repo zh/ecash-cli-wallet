@@ -173,7 +173,7 @@ class WalletSweep {
       if (flags.qty) {
         // Send specific amount
         const amountToSend = parseFloat(flags.qty)
-        
+
         if (amountToSend > balanceData.total) {
           throw new Error(
             `Insufficient funds. Trying to send ${amountToSend} XEC, but only ${balanceData.total} XEC available.`

@@ -30,7 +30,7 @@ class ETokenInfo {
 
       // Get token information with wallet context
       const tokenInfo = await this.getTokenInfo(flags.tokenId, walletName)
-      
+
       // Display token information
       this.displayTokenInfo(tokenInfo, walletName)
 
@@ -67,18 +67,21 @@ class ETokenInfo {
     try {
       // Load wallet data
       const walletData = await this.walletUtil.loadWallet(walletName)
-      
+
+      // Get analytics options to ensure proper hdPath usage
+      const analyticsOptions = await this.walletUtil.getAnalyticsOptions(walletName)
+
       // Create wallet instance for token data access
-      const wallet = new this.MinimalXecWallet(walletData.wallet.mnemonic)
+      const wallet = new this.MinimalXecWallet(walletData.wallet.mnemonic, analyticsOptions)
       await wallet.walletInfoPromise
       await wallet.initialize()
 
       // Get token data using hybrid tokens manager
       const tokenData = await wallet.hybridTokens.getTokenData(tokenId)
-      
+
       // Get basic eToken data
       const eTokenData = await wallet.getETokenData(tokenId).catch(() => null)
-      
+
       // Get wallet's token balance for this specific token
       const tokenBalance = await wallet.getETokenBalance({ tokenId })
 
@@ -93,7 +96,6 @@ class ETokenInfo {
       throw new Error(`Failed to get token information: ${err.message}`)
     }
   }
-
 
   // Display comprehensive token information
   displayTokenInfo (tokenInfo, walletName) {
@@ -130,7 +132,7 @@ class ETokenInfo {
         console.log(`   UTXO Count: ${tokenBalance.utxoCount || 0}`)
       } else {
         console.log(`   Current Balance: 0 ${tokenData.ticker || 'tokens'}`)
-        console.log(`   (No tokens found in this wallet)`)
+        console.log('   (No tokens found in this wallet)')
       }
 
       console.log()

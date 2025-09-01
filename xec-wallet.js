@@ -49,7 +49,7 @@ program
 // Define the wallet-create command
 program
   .command('wallet-create')
-  .description('Create a new XEC wallet with name (-n <name>) and description (-d)')
+  .description('Create a new XEC wallet with name')
   .option('-n, --name <string>', 'wallet name')
   .option('-d, --description <string>', 'wallet description')
   .option('-m, --mnemonic <string>', 'use existing mnemonic phrase (12 or 24 words)')
@@ -83,6 +83,16 @@ program
   .option('--export-analytics', 'export analytics data to JSON file')
   .action(walletBalance.run)
 
+// Define the wallet-sweep command
+program
+  .command('wallet-sweep')
+  .description('Sweep XEC from a WIF private key to a wallet')
+  .option('-w, --wif <string>', 'WIF private key to sweep from')
+  .option('-n, --name <string>', 'destination wallet name to sweep funds to')
+  .option('-b, --balance-only', 'only check balance, do not sweep')
+  .option('-q, --qty <string>', 'specific amount to send (optional, default: sweep all)')
+  .action(walletSweep.run)
+
 // Define the send-xec command
 program
   .command('send-xec')
@@ -93,15 +103,16 @@ program
   .option('--strategy <strategy>', 'UTXO selection strategy: efficient|privacy|security (requires analytics)')
   .action(sendXec.run)
 
-// Define the wallet-sweep command
+// Define the send-etokens command
 program
-  .command('wallet-sweep')
-  .description('Sweep XEC from a WIF private key to a wallet')
-  .option('-w, --wif <string>', 'WIF private key to sweep from')
-  .option('-n, --name <string>', 'destination wallet name to sweep funds to')
-  .option('-b, --balance-only', 'only check balance, do not sweep')
-  .option('-q, --qty <string>', 'specific amount to send (optional, default: sweep all)')
-  .action(walletSweep.run)
+  .command('send-etokens')
+  .description('Send eTokens to an address with optional smart coin selection')
+  .option('-n, --name <string>', 'wallet name sending eTokens')
+  .option('-t, --tokenId <string>', 'Token ID to send')
+  .option('-a, --addr <string>', 'destination address to send eTokens to')
+  .option('-q, --qty <string>', 'quantity of eTokens to send')
+  .option('--strategy <strategy>', 'UTXO selection strategy: efficient|privacy|security (requires analytics)')
+  .action(sendETokens.run)
 
 // Define the etoken-info command
 program
@@ -119,21 +130,10 @@ program
   .option('-n, --name <string>', 'wallet name')
   .action(etokenTxHistory.run)
 
-// Define the send-etokens command
-program
-  .command('send-etokens')
-  .description('Send eTokens to an address with optional smart coin selection')
-  .option('-n, --name <string>', 'wallet name sending eTokens')
-  .option('-t, --tokenId <string>', 'Token ID to send')
-  .option('-a, --addr <string>', 'destination address to send eTokens to')
-  .option('-q, --qty <string>', 'quantity of eTokens to send')
-  .option('--strategy <strategy>', 'UTXO selection strategy: efficient|privacy|security (requires analytics)')
-  .action(sendETokens.run)
-
 // Define the wallet-optimize command
 program
   .command('wallet-optimize')
-  .description('Optimize wallet by consolidating UTXOs for better transaction efficiency')
+  .description('Optimize wallet by consolidating UTXOs')
   .option('-n, --name <string>', 'wallet name to optimize')
   .option('--dry-run', 'show optimization plan without executing transactions')
   .action(walletOptimize.run)

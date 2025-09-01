@@ -23,6 +23,8 @@ import WalletHealth from './src/commands/wallet-health.js'
 import WalletClassify from './src/commands/wallet-classify.js'
 import WalletSecurity from './src/commands/wallet-security.js'
 import Config from './src/commands/config.js'
+import MsgSign from './src/commands/msg-sign.js'
+import MsgVerify from './src/commands/msg-verify.js'
 
 // Instantiate the subcommands
 const walletCreate = new WalletCreate()
@@ -39,6 +41,8 @@ const walletHealth = new WalletHealth()
 const walletClassify = new WalletClassify()
 const walletSecurity = new WalletSecurity()
 const config = new Config()
+const msgSign = new MsgSign()
+const msgVerify = new MsgVerify()
 const program = new Command()
 
 program
@@ -113,6 +117,23 @@ program
   .option('-q, --qty <string>', 'quantity of eTokens to send')
   .option('--strategy <strategy>', 'UTXO selection strategy: efficient|privacy|security (requires analytics)')
   .action(sendETokens.run)
+
+// Define the msg-sign command
+program
+  .command('msg-sign')
+  .description('Sign a message with your private key')
+  .option('-n, --name <string>', 'wallet name')
+  .option('-m, --msg <string>', 'message to sign')
+  .action(msgSign.run)
+
+// Define the msg-verify command
+program
+  .command('msg-verify')
+  .description('Verify a message a signature')
+  .option('-a, --addr <string>', 'XEC address to verify signature against')
+  .option('-m, --msg <string>', 'message that was signed')
+  .option('-s, --sig <string>', 'signature to verify')
+  .action(msgVerify.run)
 
 // Define the etoken-info command
 program

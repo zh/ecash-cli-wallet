@@ -322,6 +322,90 @@ View transaction history for a specific eToken.
 node xec-wallet.js etoken-tx-history -n my-wallet -t a436c8e1b6bee3139a4d16a43e81c00c6e44be3a4df39e8c228985e6e5158b94
 ```
 
+### msg-sign
+
+Cryptographically sign a message using your wallet's private key. This creates a digital signature that proves the message was signed by the owner of the wallet's XEC address.
+
+**Options:**
+
+- `-n, --name <string>` - Wallet name (required)
+- `-m, --msg <string>` - Message to sign (required)
+
+**Examples:**
+
+```bash
+# Sign a simple message
+node xec-wallet.js msg-sign -n my-wallet -m "Hello eCash!"
+
+# Sign a longer message
+node xec-wallet.js msg-sign -n trading-wallet -m "I agree to trade 100 XEC for this NFT"
+
+# Sign a message with special characters
+node xec-wallet.js msg-sign -n my-wallet -m "Timestamp: 2025-01-15 14:30:00 UTC"
+```
+
+**Output:**
+
+The command displays:
+- The XEC address used for signing
+- The original message
+- The cryptographic signature (base64 encoded)
+
+**Security Notes:**
+
+- The signature proves ownership of the private key associated with the displayed XEC address
+- Anyone can verify this signature using the `msg-verify` command
+- Keep your signed messages and signatures secure if they contain sensitive information
+- The signature is deterministic - signing the same message with the same key always produces the same signature
+
+### msg-verify
+
+Verify that a message signature was created by the owner of a specific XEC address. This allows you to cryptographically validate that a message was signed by someone who controls the private key for the given address.
+
+**Options:**
+
+- `-a, --addr <string>` - XEC address to verify signature against (required)
+- `-m, --msg <string>` - Original message that was signed (required)
+- `-s, --sig <string>` - Signature to verify (required)
+
+**Examples:**
+
+```bash
+# Verify a message signature
+node xec-wallet.js msg-verify \
+  -a "ecash:qz9wjfr4e6aj0cq9akd23jm9nflecjpj8sze2fdyfl" \
+  -m "Hello eCash!" \
+  -s "H8+5rAY2d8W2cVkN7sJqrb+VQv1ZYsE/OKjA8B5cRGq4FYoQ8cN2pVtK7X0l/nWkJ6A9fH2uYB5L3D8E5F6G7="
+
+# Verify a signature with a longer message
+node xec-wallet.js msg-verify \
+  -a "ecash:qr2zqxyzabcdef123456789abcdef123456789abc" \
+  -m "I agree to trade 100 XEC for this NFT" \
+  -s "IBMa4FgJK5L7M8N9O0P1Q2R3S4T5U6V7W8X9Y0ZaAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXy"
+```
+
+**Output:**
+
+The command displays:
+- The original message
+- The signature being verified  
+- The XEC address being checked against
+- Verification result: **VALID** or **INVALID**
+
+**Use Cases:**
+
+- **Identity Verification**: Prove someone controls a specific XEC address
+- **Message Authentication**: Verify a message hasn't been tampered with
+- **Digital Contracts**: Validate agreement signatures in peer-to-peer transactions
+- **Audit Trails**: Verify historical messages and commitments
+
+**Validation:**
+
+- XEC address must be in valid `ecash:` format
+- All three parameters (address, message, signature) are required
+- Message must match exactly (case-sensitive, including whitespace)
+- Invalid signatures return **INVALID** result, not errors
+
 ### send-etokens
 
 Send eTokens (SLP or ALP) to an address with optional smart coin selection.

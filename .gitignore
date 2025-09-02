@@ -1,5 +1,7 @@
 node_modules/
 .wallets/
+.nyc_output/
 *.log
 .env
+*-health-report-*.json
 .DS_Store

@@ -49,11 +49,6 @@ class MsgVerify {
       throw new Error('You must specify an address with the -a flag.')
     }
 
-    // Validate XEC address format
-    if (!isValidCashAddress(addr)) {
-      throw new Error('Invalid XEC address format. Address must be in ecash: format.')
-    }
-
     // Exit if message not specified
     const msg = flags.msg
     if (!msg || msg === '') {
@@ -64,6 +59,11 @@ class MsgVerify {
     const sig = flags.sig
     if (!sig || sig === '') {
       throw new Error('You must specify a signature with the -s flag.')
+    }
+
+    // Validate XEC address format after all required fields are present
+    if (!isValidCashAddress(addr)) {
+      throw new Error('Invalid XEC address format. Address must be in ecash: format.')
     }
 
     return true

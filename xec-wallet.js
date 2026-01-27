@@ -200,9 +200,9 @@ program
 program
   .command('config')
   .description('Configuration management for eCash CLI wallet')
-  .argument('<action>', 'config action: get|set|list|reset|analytics-enable|analytics-disable|analytics-status')
+  .argument('<action>', 'config action: get|set|list|reset|analytics-enable|analytics-disable|analytics-status|avalanche-enable|avalanche-disable|avalanche-status|avalanche-default-finality')
   .option('--key <key>', 'configuration key (for get/set actions)')
-  .option('--value <value>', 'configuration value (for set action)')
+  .option('--value <value>', 'configuration value (for set/avalanche-default-finality actions)')
   .option('--wallet <name>', 'wallet name (for analytics actions)')
   .option('--defaults', 'show default values (for list action)')
   .option('--confirm', 'confirm reset operation (for reset action)')

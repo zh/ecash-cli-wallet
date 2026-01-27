@@ -22,6 +22,10 @@ class Config {
     this.analyticsEnable = this.analyticsEnable.bind(this)
     this.analyticsDisable = this.analyticsDisable.bind(this)
     this.analyticsStatus = this.analyticsStatus.bind(this)
+    this.avalancheEnable = this.avalancheEnable.bind(this)
+    this.avalancheDisable = this.avalancheDisable.bind(this)
+    this.avalancheStatus = this.avalancheStatus.bind(this)
+    this.avalancheDefaultFinality = this.avalancheDefaultFinality.bind(this)
     this.displayConfigValue = this.displayConfigValue.bind(this)
     this.displayAllConfig = this.displayAllConfig.bind(this)
     this.displayConfigHelp = this.displayConfigHelp.bind(this)
@@ -47,6 +51,14 @@ class Config {
           return await this.analyticsDisable(flags)
         case 'analytics-status':
           return await this.analyticsStatus(flags)
+        case 'avalanche-enable':
+          return await this.avalancheEnable(flags)
+        case 'avalanche-disable':
+          return await this.avalancheDisable(flags)
+        case 'avalanche-status':
+          return await this.avalancheStatus(flags)
+        case 'avalanche-default-finality':
+          return await this.avalancheDefaultFinality(flags)
         default:
           this.displayConfigHelp()
           return false
@@ -61,7 +73,8 @@ class Config {
     // Validate action
     const validActions = [
       'get', 'set', 'list', 'reset',
-      'analytics-enable', 'analytics-disable', 'analytics-status'
+      'analytics-enable', 'analytics-disable', 'analytics-status',
+      'avalanche-enable', 'avalanche-disable', 'avalanche-status', 'avalanche-default-finality'
     ]
 
     if (!action || !validActions.includes(action)) {
@@ -320,6 +333,112 @@ class Config {
     }
   }
 
+  // Enable Avalanche features
+  async avalancheEnable (flags) {
+    try {
+      console.log('Enabling Avalanche features...\n')
+
+      await this.configManager.setConfig('avalanche.enabled', true)
+
+      console.log('Avalanche features enabled.')
+      console.log()
+      console.log('Avalanche Pre-Consensus provides instant transaction finality (~3 seconds).')
+      console.log('Use the --finality flag with transaction commands to wait for confirmation.')
+      console.log()
+      console.log('Example:')
+      console.log('   xec-wallet send-xec -n mywallet -a ecash:qp... -q 100 --finality')
+
+      return true
+    } catch (err) {
+      console.error(`Failed to enable Avalanche: ${err.message}`)
+      return false
+    }
+  }
+
+  // Disable Avalanche features
+  async avalancheDisable (flags) {
+    try {
+      console.log('Disabling Avalanche features...\n')
+
+      await this.configManager.setConfig('avalanche.enabled', false)
+
+      console.log('Avalanche features disabled.')
+      console.log('Transactions will use standard block confirmation (~10 minutes).')
+
+      return true
+    } catch (err) {
+      console.error(`Failed to disable Avalanche: ${err.message}`)
+      return false
+    }
+  }
+
+  // Show Avalanche status
+  async avalancheStatus (flags) {
+    try {
+      console.log('Avalanche Configuration:\n')
+
+      const avalancheConfig = await this.configManager.getConfig('avalanche')
+
+      console.log(`  Enabled: ${avalancheConfig.enabled}`)
+      console.log(`  Default Await Finality: ${avalancheConfig.defaultAwaitFinality}`)
+      console.log(`  Finality Timeout: ${avalancheConfig.finalityTimeout}ms`)
+      console.log(`  Show Finality Status: ${avalancheConfig.showFinalityStatus}`)
+
+      console.log()
+      if (avalancheConfig.enabled) {
+        console.log('Avalanche Pre-Consensus is ENABLED.')
+        console.log('Use --finality flag with transactions for instant confirmation (~3 sec).')
+        if (avalancheConfig.defaultAwaitFinality) {
+          console.log('Default Finality: ON (all transactions wait for confirmation)')
+        }
+      } else {
+        console.log('Avalanche Pre-Consensus is DISABLED.')
+        console.log('Enable with: xec-wallet config avalanche-enable')
+      }
+
+      return true
+    } catch (err) {
+      console.error(`Failed to show Avalanche status: ${err.message}`)
+      return false
+    }
+  }
+
+  // Set default finality behavior
+  async avalancheDefaultFinality (flags) {
+    try {
+      // Get the value from the flags
+      const valueArg = flags.value
+
+      if (valueArg === undefined || valueArg === '') {
+        console.log('Usage: xec-wallet config avalanche-default-finality --value <true|false>')
+        console.log()
+        console.log('When enabled, all transactions will automatically wait for Avalanche finality.')
+        return false
+      }
+
+      const value = valueArg.toLowerCase() === 'true'
+
+      console.log(`Setting Avalanche default finality to ${value}...\n`)
+
+      await this.configManager.setConfig('avalanche.defaultAwaitFinality', value)
+
+      console.log(`Avalanche default finality: ${value ? 'ON' : 'OFF'}`)
+
+      if (value) {
+        console.log('All transactions will now wait for Avalanche finality by default.')
+        console.log('This provides instant confirmation (~3 seconds) for all sends.')
+      } else {
+        console.log('Transactions will not wait for finality by default.')
+        console.log('Use --finality flag to enable per-transaction.')
+      }
+
+      return true
+    } catch (err) {
+      console.error(`Failed to set default finality: ${err.message}`)
+      return false
+    }
+  }
+
   // Display a single configuration value
   displayConfigValue (key, value) {
     console.log(`Configuration: ${key}`)
@@ -388,13 +507,17 @@ class Config {
     console.log('   node xec-wallet.js config <action> [options]')
     console.log()
     console.log('Actions:')
-    console.log('   get                    Get configuration value')
-    console.log('   set                    Set configuration value')
-    console.log('   list                   List all configuration')
-    console.log('   reset                  Reset to default configuration')
-    console.log('   analytics-enable       Enable analytics features')
-    console.log('   analytics-disable      Disable analytics features')
-    console.log('   analytics-status       Show analytics status')
+    console.log('   get                        Get configuration value')
+    console.log('   set                        Set configuration value')
+    console.log('   list                       List all configuration')
+    console.log('   reset                      Reset to default configuration')
+    console.log('   analytics-enable           Enable analytics features')
+    console.log('   analytics-disable          Disable analytics features')
+    console.log('   analytics-status           Show analytics status')
+    console.log('   avalanche-enable           Enable Avalanche finality features')
+    console.log('   avalanche-disable          Disable Avalanche finality features')
+    console.log('   avalanche-status           Show Avalanche configuration')
+    console.log('   avalanche-default-finality Set default finality behavior')
     console.log()
     console.log('Options:')
     console.log('   --key <key>           Configuration key (for get/set)')
@@ -410,10 +533,16 @@ class Config {
     console.log('   node xec-wallet.js config analytics-enable')
     console.log('   node xec-wallet.js config analytics-enable --wallet my-wallet')
     console.log('   node xec-wallet.js config analytics-status')
+    console.log('   node xec-wallet.js config avalanche-enable')
+    console.log('   node xec-wallet.js config avalanche-status')
+    console.log('   node xec-wallet.js config avalanche-default-finality --value true')
     console.log()
     console.log('Common Configuration Keys:')
     console.log('   analytics.enabled              Enable/disable analytics')
     console.log('   analytics.defaultStrategy      Default coin selection strategy')
+    console.log('   avalanche.enabled              Enable/disable Avalanche features')
+    console.log('   avalanche.defaultAwaitFinality Wait for finality by default')
+    console.log('   avalanche.finalityTimeout      Finality timeout in milliseconds')
     console.log('   display.showHealthScores       Show health scores in balance')
     console.log('   display.showPrivacyScores      Show privacy scores in balance')
     console.log('   thresholds.minHealthScore      Minimum health score threshold')

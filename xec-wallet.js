@@ -95,6 +95,7 @@ program
   .option('-n, --name <string>', 'destination wallet name to sweep funds to')
   .option('-b, --balance-only', 'only check balance, do not sweep')
   .option('-q, --qty <string>', 'specific amount to send (optional, default: sweep all)')
+  .option('-f, --finality', 'Wait for Avalanche finality (~3 sec instant confirmation)')
   .action(walletSweep.run)
 
 // Define the send-xec command

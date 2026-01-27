@@ -51,6 +51,11 @@ class WalletSweep {
 
       console.log('Transaction sent successfully!')
       console.log(`TXID: ${txid}`)
+      if (flags.finality) {
+        console.log('Finality: CONFIRMED (Avalanche)')
+      } else {
+        console.log('Finality: Pending (~10 min for block confirmation)')
+      }
       console.log()
       console.log('View this transaction on block explorers:')
       console.log(`https://explorer.e.cash/tx/${txid}`)
@@ -170,6 +175,12 @@ class WalletSweep {
 
       let txid
 
+      // Build transaction options for finality
+      const txOptions = {}
+      if (flags.finality) {
+        txOptions.awaitFinality = true
+      }
+
       if (flags.qty) {
         // Send specific amount
         const amountToSend = parseFloat(flags.qty)
@@ -185,13 +196,13 @@ class WalletSweep {
 
         const outputs = [{
           address: destAddress,
-          amountSat: satoshis
+          amount: satoshis
         }]
 
-        txid = await sourceWallet.sendXec(outputs)
+        txid = await sourceWallet.sendXec(outputs, txOptions)
       } else {
         // Send all funds
-        txid = await sourceWallet.sendAllXec(destAddress)
+        txid = await sourceWallet.sendAllXec(destAddress, txOptions)
       }
 
       return txid

@@ -40,6 +40,11 @@ class SendXec {
 
       console.log('Transaction sent successfully!')
       console.log(`TXID: ${txid}`)
+      if (flags.finality) {
+        console.log('Finality: CONFIRMED (Avalanche)')
+      } else {
+        console.log('Finality: Pending (~10 min for block confirmation)')
+      }
       console.log()
       console.log('View this transaction on block explorers:')
       console.log(`https://explorer.e.cash/tx/${txid}`)
@@ -258,6 +263,15 @@ class SendXec {
         await this.validateTransactionSafety(xecWallet, outputs, flags)
       }
 
+      // Build transaction options for finality
+      const txOptions = {}
+      if (flags.finality) {
+        txOptions.awaitFinality = true
+        if (flags.finalityTimeout) {
+          txOptions.finalityTimeout = parseInt(flags.finalityTimeout)
+        }
+      }
+
       // Send transaction with smart selection if analytics are available
       let txid
 
@@ -273,18 +287,18 @@ class SendXec {
 
           // Smart UTXO selection and transaction building
           // This uses the minimal-xec-wallet's smart selection capabilities
-          txid = await this.sendXecWithStrategy(xecWallet, outputs, strategyOptions)
+          txid = await this.sendXecWithStrategy(xecWallet, outputs, strategyOptions, txOptions)
 
           console.log(`Transaction built using ${flags.strategy} strategy`)
         } catch (smartSelectionError) {
           console.warn(`Warning: Smart selection failed (${smartSelectionError.message}), falling back to standard method`)
 
           // Fallback to standard method
-          txid = await xecWallet.sendXec(outputs)
+          txid = await xecWallet.sendXec(outputs, txOptions)
         }
       } else {
         // Standard transaction sending (original behavior)
-        txid = await xecWallet.sendXec(outputs)
+        txid = await xecWallet.sendXec(outputs, txOptions)
       }
 
       return txid
@@ -617,7 +631,7 @@ class SendXec {
   }
 
   // Send XEC using smart UTXO selection strategy
-  async sendXecWithStrategy (wallet, outputs, strategyOptions) {
+  async sendXecWithStrategy (wallet, outputs, strategyOptions, txOptions = {}) {
     try {
       // PHASE 5.2: Apply token-aware pre-filtering (only in real environments)
       if (this.isTestEnvironment(wallet)) {
@@ -626,13 +640,13 @@ class SendXec {
         // Fallback to original implementation for test environments
         if (wallet.sendXecWithStrategy && typeof wallet.sendXecWithStrategy === 'function') {
           console.log(`Using wallet's native ${strategyOptions.strategy} strategy without filtering`)
-          return await wallet.sendXecWithStrategy(outputs, strategyOptions)
+          return await wallet.sendXecWithStrategy(outputs, strategyOptions, txOptions)
         }
 
         if (wallet.setUtxoSelectionStrategy && typeof wallet.setUtxoSelectionStrategy === 'function') {
           console.log(`Configuring wallet to use ${strategyOptions.strategy} strategy`)
           await wallet.setUtxoSelectionStrategy(strategyOptions.strategy)
-          return await wallet.sendXec(outputs)
+          return await wallet.sendXec(outputs, txOptions)
         }
 
         // Log strategy preferences for debugging (original behavior)
@@ -646,7 +660,7 @@ class SendXec {
           console.log('  Strategy focus: Minimizing transaction fees and size')
         }
 
-        return await wallet.sendXec(outputs)
+        return await wallet.sendXec(outputs, txOptions)
       }
 
       // Real environment - apply token-aware pre-filtering
@@ -735,7 +749,7 @@ class SendXec {
           if (wallet.sendXecWithStrategy && typeof wallet.sendXecWithStrategy === 'function') {
             // Use the analytics-enabled send method with filtered UTXOs
             console.log(`Using wallet's native ${strategyOptions.strategy} strategy with token-aware filtering`)
-            return await wallet.sendXecWithStrategy(outputs, strategyOptions)
+            return await wallet.sendXecWithStrategy(outputs, strategyOptions, txOptions)
           }
 
           // Check if wallet supports strategy configuration
@@ -745,7 +759,7 @@ class SendXec {
             await wallet.setUtxoSelectionStrategy(strategyOptions.strategy)
 
             // Send with configured strategy and filtered UTXOs
-            const txid = await wallet.sendXec(outputs)
+            const txid = await wallet.sendXec(outputs, txOptions)
             return txid
           }
 
@@ -761,7 +775,7 @@ class SendXec {
             console.log('  Strategy focus: Efficient pure XEC usage (token UTXOs preserved)')
           }
 
-          const txid = await wallet.sendXec(outputs)
+          const txid = await wallet.sendXec(outputs, txOptions)
           return txid
         } finally {
           // Always restore original UTXOs
@@ -778,10 +792,10 @@ class SendXec {
         // Fallback to original implementation if filtering fails
         if (wallet.sendXecWithStrategy && typeof wallet.sendXecWithStrategy === 'function') {
           console.log(`Fallback: Using wallet's native ${strategyOptions.strategy} strategy without filtering`)
-          return await wallet.sendXecWithStrategy(outputs, strategyOptions)
+          return await wallet.sendXecWithStrategy(outputs, strategyOptions, txOptions)
         }
 
-        const txid = await wallet.sendXec(outputs)
+        const txid = await wallet.sendXec(outputs, txOptions)
         return txid
       }
     } catch (err) {

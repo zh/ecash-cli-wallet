@@ -105,6 +105,8 @@ program
   .option('-a, --addr <string>', 'address to send XEC to')
   .option('-q, --qty <string>', 'the quantity of XEC to send')
   .option('--strategy <strategy>', 'UTXO selection strategy: efficient|privacy|security (requires analytics)')
+  .option('-f, --finality', 'Wait for Avalanche finality (~3 sec instant confirmation)')
+  .option('--finality-timeout <ms>', 'Finality timeout in milliseconds (default: 30000)')
   .action(sendXec.run)
 
 // Define the send-etokens command

@@ -131,8 +131,9 @@ describe('Avalanche Transactions Integration', function () {
     it('should require wallet name for send-etokens', async function () {
       const result = await runCLI(['send-etokens', '-t', 'token123', '-a', 'ecash:test', '-q', '10'])
 
-      // Should fail with wallet name error
-      expect(result.stdout || result.stderr).to.include('wallet name')
+      // Should fail with wallet name error (check both stdout and stderr)
+      const output = (result.stdout || '') + ' ' + (result.stderr || '')
+      expect(output.toLowerCase()).to.include('wallet name')
     })
   })
 
@@ -165,6 +166,7 @@ describe('Avalanche Transactions Integration', function () {
 
   describe('Config Persistence', function () {
     it('should persist avalanche settings across commands', async function () {
+      this.timeout(30000) // Increase timeout for multiple sequential CLI operations
       // Enable avalanche
       const enableResult = await runCLI(['config', 'avalanche-enable'])
       expect(enableResult.code).to.equal(0)

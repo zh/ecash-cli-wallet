@@ -19,7 +19,14 @@ describe('WalletCreate Unit Tests', function () {
     // Mock WalletUtil
     mockWalletUtil = {
       walletExists: sinon.stub(),
-      saveWallet: sinon.stub()
+      saveWallet: sinon.stub(),
+      getAvalancheOptions: sinon.stub().resolves({
+        avalanche: {
+          enabled: true,
+          defaultAwaitFinality: false,
+          finalityTimeout: 30000
+        }
+      })
     }
     walletCreate.walletUtil = mockWalletUtil
 

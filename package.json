@@ -1,6 +1,6 @@
 {
   "name": "ecash-cli-wallet",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "A command-line eCash (XEC) wallet using minimal-xec-wallet",
   "main": "xec-wallet.js",
   "type": "module",

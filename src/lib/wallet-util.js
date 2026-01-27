@@ -32,6 +32,7 @@ class WalletUtil {
     this.migrateWalletToAnalytics = this.migrateWalletToAnalytics.bind(this)
     this.updateWalletAnalyticsConfig = this.updateWalletAnalyticsConfig.bind(this)
     this.validateWalletData = this.validateWalletData.bind(this)
+    this.getAvalancheOptions = this.getAvalancheOptions.bind(this)
   }
 
   // Get the full path for a wallet file
@@ -283,6 +284,29 @@ class WalletUtil {
         }
       } catch (loadErr) {
         return { utxoAnalytics: { enabled: false } }
+      }
+    }
+  }
+
+  // Get Avalanche options for MinimalXecWallet constructor
+  async getAvalancheOptions (walletName) {
+    try {
+      const config = await this.configManager.loadGlobalConfig()
+      return {
+        avalanche: {
+          enabled: config.avalanche.enabled,
+          defaultAwaitFinality: config.avalanche.defaultAwaitFinality,
+          finalityTimeout: config.avalanche.finalityTimeout
+        }
+      }
+    } catch (err) {
+      console.warn(`Warning: Could not get Avalanche options: ${err.message}`)
+      return {
+        avalanche: {
+          enabled: true,
+          defaultAwaitFinality: false,
+          finalityTimeout: 30000
+        }
       }
     }
   }

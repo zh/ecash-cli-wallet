@@ -150,6 +150,15 @@ class WalletBalance {
       } else {
         console.log('Analytics: DISABLED (use --detailed or config to enable)')
       }
+
+      // Show Avalanche finality status
+      const avalancheConfig = await this.configManager.getConfig('avalanche')
+      if (avalancheConfig) {
+        console.log(`Avalanche Finality: ${avalancheConfig.enabled ? 'ENABLED' : 'DISABLED'}`)
+        if (avalancheConfig.enabled && avalancheConfig.defaultAwaitFinality) {
+          console.log('Default Finality: ON (all transactions wait for ~3 sec confirmation)')
+        }
+      }
       console.log()
 
       // Display XEC balance

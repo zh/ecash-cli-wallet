@@ -17,6 +17,7 @@ A command-line interface (CLI) wallet for eCash (XEC) cryptocurrency using the m
 - View eToken information and transaction history
 - UTXO optimization for better transaction efficiency
 - Secure JSON wallet storage with analytics configuration
+- **Avalanche Pre-Consensus**: Instant transaction finality (~3 seconds vs ~10 minutes)
 
 ### Advanced Analytics Features
 
@@ -146,6 +147,84 @@ node xec-wallet.js wallet-balance -n my-wallet --detailed
 export ECASH_CLI_ANALYTICS_ENABLED=false
 ```
 
+## Avalanche Pre-Consensus (Instant Finality)
+
+eCash features **Avalanche Pre-Consensus**, a revolutionary technology that provides instant transaction finality in approximately **3 seconds** compared to the traditional ~10 minutes required for block confirmations.
+
+### What is Avalanche Finality?
+
+Traditional blockchain transactions require waiting for block confirmations (typically 10+ minutes) before a transaction is considered final. With Avalanche Pre-Consensus, eCash transactions achieve finality in just ~3 seconds through a network consensus mechanism that runs independently of block mining.
+
+### Performance Comparison
+
+| Method | Finality Time | Use Case |
+|--------|--------------|----------|
+| Standard | ~10 minutes | Low-priority transactions, batched operations |
+| Avalanche | ~3 seconds | Point-of-sale, real-time payments, trading |
+
+### Using Finality Flag
+
+Add the `--finality` (or `-f`) flag to any transaction command to wait for Avalanche confirmation:
+
+```bash
+# Send XEC with instant finality (~3 seconds)
+node xec-wallet.js send-xec -n my-wallet -a ecash:qp... -q 100 --finality
+
+# Send XEC with custom timeout (45 seconds)
+node xec-wallet.js send-xec -n my-wallet -a ecash:qp... -q 100 --finality --finality-timeout 45000
+
+# Sweep funds with instant confirmation
+node xec-wallet.js wallet-sweep -w <WIF> -n my-wallet --finality
+
+# Send eTokens with finality
+node xec-wallet.js send-etokens -n my-wallet -t <tokenId> -a ecash:qp... -q 10 --finality
+```
+
+### Avalanche Configuration
+
+Manage Avalanche settings using the config command:
+
+```bash
+# Check Avalanche status
+node xec-wallet.js config avalanche-status
+
+# Enable Avalanche features
+node xec-wallet.js config avalanche-enable
+
+# Disable Avalanche features
+node xec-wallet.js config avalanche-disable
+
+# Set default finality behavior (always wait for finality)
+node xec-wallet.js config avalanche-default-finality --value true
+
+# Disable default finality (require --finality flag)
+node xec-wallet.js config avalanche-default-finality --value false
+```
+
+### Checking Avalanche Status
+
+The `wallet-balance` command displays the current Avalanche configuration:
+
+```bash
+node xec-wallet.js wallet-balance -n my-wallet
+# Output includes:
+# Avalanche Finality: ENABLED
+# Default Finality: ON (all transactions wait for ~3 sec confirmation)
+```
+
+### When to Use Finality
+
+**Use `--finality` when:**
+- Processing point-of-sale transactions
+- Real-time trading or exchanges
+- Any situation requiring immediate confirmation
+- User-facing applications where speed matters
+
+**Standard (no finality flag) is fine when:**
+- Batching multiple transactions
+- Background/automated operations
+- When you don't need immediate confirmation
+
 ## Command Reference
 
 ### wallet-create
@@ -256,15 +335,51 @@ node xec-wallet.js wallet-addrs -n my-wallet --wif
 node xec-wallet.js wallet-addrs -n my-wallet --index 5 -q
 ```
 
+### wallet-sweep
+
+Sweep XEC from a WIF private key to a wallet with optional Avalanche finality.
+
+**Options:**
+
+- `-w, --wif <string>` - WIF private key to sweep from (required)
+- `-n, --name <string>` - Destination wallet name to sweep funds to (required)
+- `-b, --balance-only` - Only check balance, do not sweep
+- `-q, --qty <string>` - Specific amount to send (optional, default: sweep all)
+- `-f, --finality` - Wait for Avalanche finality (~3 sec instant confirmation)
+
+**Examples:**
+
+```bash
+# Check balance of WIF without sweeping
+node xec-wallet.js wallet-sweep -w L1a2b3c4d5... -n my-wallet --balance-only
+
+# Sweep all funds to wallet
+node xec-wallet.js wallet-sweep -w L1a2b3c4d5... -n my-wallet
+
+# Sweep specific amount
+node xec-wallet.js wallet-sweep -w L1a2b3c4d5... -n my-wallet -q 100
+
+# Sweep with instant Avalanche finality
+node xec-wallet.js wallet-sweep -w L1a2b3c4d5... -n my-wallet --finality
+```
+
+**Security Notes:**
+
+- WIF private keys are sensitive; avoid using in shell history
+- Consider using `--balance-only` first to verify the source address
+- Finality ensures the sweep transaction is confirmed before proceeding
+
 ### send-xec
 
-Send XEC to an address with optional smart coin selection.
+Send XEC to an address with optional smart coin selection and Avalanche finality.
 
 **Options:**
 
 - `-n, --name <string>` - Wallet name (required)
 - `-a, --addr <string>` - Recipient eCash address (required)
 - `-q, --qty <string>` - Amount in XEC (required)
+- `-f, --finality` - Wait for Avalanche finality (~3 sec instant confirmation)
+- `--finality-timeout <ms>` - Finality timeout in milliseconds (default: 30000)
 - `--strategy <strategy>` - UTXO selection strategy: efficient|privacy|security (requires analytics)
 
 **Examples:**
@@ -272,6 +387,12 @@ Send XEC to an address with optional smart coin selection.
 ```bash
 # Basic XEC transaction
 node xec-wallet.js send-xec -n my-wallet -a ecash:qz9wjfr4e6aj0cq9akd23jm9nflecjpj8sze2fdyfl -q 50.5
+
+# Send with instant Avalanche finality (~3 seconds)
+node xec-wallet.js send-xec -n my-wallet -a ecash:qz9wjfr4e6aj0cq9akd23jm9nflecjpj8sze2fdyfl -q 100 --finality
+
+# Send with custom finality timeout
+node xec-wallet.js send-xec -n my-wallet -a ecash:qz9wjfr4e6aj0cq9akd23jm9nflecjpj8sze2fdyfl -q 100 --finality --finality-timeout 45000
 
 # Use efficient strategy (minimize fees)
 node xec-wallet.js send-xec -n my-wallet -a ecash:qz9wjfr4e6aj0cq9akd23jm9nflecjpj8sze2fdyfl -q 100 --strategy efficient
@@ -408,7 +529,7 @@ The command displays:
 
 ### send-etokens
 
-Send eTokens (SLP or ALP) to an address with optional smart coin selection.
+Send eTokens (SLP or ALP) to an address with optional smart coin selection and Avalanche finality.
 
 **Options:**
 
@@ -416,6 +537,7 @@ Send eTokens (SLP or ALP) to an address with optional smart coin selection.
 - `-t, --tokenId <string>` - 64-character hex token ID (required)
 - `-a, --addr <string>` - Recipient eCash address (required)
 - `-q, --qty <string>` - Amount of tokens to send (required)
+- `-f, --finality` - Wait for Avalanche finality (~3 sec instant confirmation)
 - `--strategy <strategy>` - UTXO selection strategy: efficient|privacy|security (requires analytics)
 
 **Examples:**
@@ -423,6 +545,9 @@ Send eTokens (SLP or ALP) to an address with optional smart coin selection.
 ```bash
 # Basic eToken transaction
 node xec-wallet.js send-etokens -n my-wallet -t a436c8e1b6bee3139a4d16a43e81c00c6e44be3a4df39e8c228985e6e5158b94 -a ecash:qz9wjfr4e6aj0cq9akd23jm9nflecjpj8sze2fdyfl -q 100.5
+
+# Send eTokens with instant Avalanche finality
+node xec-wallet.js send-etokens -n my-wallet -t a436c8e1b6bee3139a4d16a43e81c00c6e44be3a4df39e8c228985e6e5158b94 -a ecash:qz9wjfr4e6aj0cq9akd23jm9nflecjpj8sze2fdyfl -q 100 --finality
 
 # Use efficient strategy for optimal fee management
 node xec-wallet.js send-etokens -n my-wallet -t a436c8e1b6bee3139a4d16a43e81c00c6e44be3a4df39e8c228985e6e5158b94 -a ecash:qz9wjfr4e6aj0cq9akd23jm9nflecjpj8sze2fdyfl -q 50 --strategy efficient
@@ -578,12 +703,16 @@ node xec-wallet.js config <action> [options]
 **Actions:**
 
 - `get` - Get configuration value
-- `set` - Set configuration value  
+- `set` - Set configuration value
 - `list` - List all configuration
 - `reset` - Reset to default configuration
 - `analytics-enable` - Enable analytics features
 - `analytics-disable` - Disable analytics features
 - `analytics-status` - Show analytics status
+- `avalanche-enable` - Enable Avalanche Pre-Consensus features
+- `avalanche-disable` - Disable Avalanche features
+- `avalanche-status` - Show Avalanche configuration
+- `avalanche-default-finality` - Set default finality behavior (--value true|false)
 
 **Options:**
 
@@ -619,6 +748,21 @@ node xec-wallet.js config list --defaults
 
 # Reset to defaults (requires --confirm)
 node xec-wallet.js config reset --confirm
+
+# Check Avalanche status
+node xec-wallet.js config avalanche-status
+
+# Enable Avalanche Pre-Consensus
+node xec-wallet.js config avalanche-enable
+
+# Disable Avalanche features
+node xec-wallet.js config avalanche-disable
+
+# Set transactions to always wait for finality by default
+node xec-wallet.js config avalanche-default-finality --value true
+
+# Require --finality flag for finality (default)
+node xec-wallet.js config avalanche-default-finality --value false
 ```
 
 ## Wallet Storage
@@ -858,6 +1002,13 @@ The CLI follows the same patterns as psf-slp-wallet but enhanced for XEC and eTo
 - Hybrid token management for cross-protocol compatibility
 
 ### Recent Updates
+- **v2.1.0**: Added Avalanche Pre-Consensus support for instant transaction finality
+  - Instant transaction confirmation (~3 seconds vs ~10 minutes)
+  - `--finality` flag for send-xec, send-etokens, and wallet-sweep commands
+  - `--finality-timeout` option for custom timeout settings
+  - Avalanche configuration commands (avalanche-enable, avalanche-disable, avalanche-status)
+  - Default finality behavior configuration (avalanche-default-finality)
+  - Avalanche status display in wallet-balance command
 - **v2.0.0**: Added comprehensive UTXO analytics and health monitoring system
   - Advanced UTXO classification (value-based and age-based)
   - Security threat detection and dust attack analysis

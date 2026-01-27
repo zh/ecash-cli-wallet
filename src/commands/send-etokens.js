@@ -69,7 +69,7 @@ class SendETokens {
       }
 
       // Step 8: Send transaction
-      const txid = await this.sendTransaction(wallet, flags.tokenId, outputs, flags.strategy)
+      const txid = await this.sendTransaction(wallet, flags.tokenId, outputs, flags.strategy, flags)
 
       // Step 9: Display results
       this.displayResults(txid, flags, tokenInfo)
@@ -623,7 +623,7 @@ class SendETokens {
   }
 
   // Send the transaction (with optional strategy)
-  async sendTransaction (wallet, tokenId, outputs, strategy = null) {
+  async sendTransaction (wallet, tokenId, outputs, strategy = null, flags = {}) {
     try {
       console.log('Building and broadcasting transaction...')
 
@@ -635,11 +635,17 @@ class SendETokens {
         throw new Error(`Insufficient XEC for transaction fees. Current balance: ${xecBalance} XEC. Minimum required: ~0.1 XEC`)
       }
 
+      // Build transaction options for finality
+      const txOptions = {}
+      if (flags.finality) {
+        txOptions.awaitFinality = true
+      }
+
       // Use smart eToken selection if strategy is provided and analytics are available
       if (strategy && wallet.utxos && wallet.utxos.hasAnalytics && wallet.utxos.hasAnalytics()) {
         try {
           console.log(`Using ${strategy} strategy for eToken UTXO selection...`)
-          return await this.sendETokensWithStrategy(wallet, tokenId, outputs, strategy)
+          return await this.sendETokensWithStrategy(wallet, tokenId, outputs, strategy, txOptions)
         } catch (strategyError) {
           console.warn(`Warning: Smart eToken selection failed (${strategyError.message}), falling back to standard method`)
           // Continue with standard methods below
@@ -651,7 +657,7 @@ class SendETokens {
       // Method 1: Try wallet.sendETokens with fee rate (primary method)
       try {
         // Use higher fee rate to help with UTXO selection and change calculation
-        const txid = await wallet.sendETokens(tokenId, outputs, 2.0)
+        const txid = await wallet.sendETokens(tokenId, outputs, 2.0, txOptions)
         return txid
       } catch (err) {
         // Check for specific errors - catch insufficient XEC errors that are deeply nested
@@ -727,7 +733,7 @@ class SendETokens {
   }
 
   // Send eTokens using smart UTXO selection strategy
-  async sendETokensWithStrategy (wallet, tokenId, outputs, strategy) {
+  async sendETokensWithStrategy (wallet, tokenId, outputs, strategy, txOptions = {}) {
     try {
       // PHASE 5.2: Apply token-aware analysis for eToken transactions
       console.log(`Applying token-aware analysis for ${strategy} eToken strategy...`)
@@ -822,14 +828,14 @@ class SendETokens {
       // Check if wallet has native eToken strategy support
       if (wallet.sendETokensWithStrategy && typeof wallet.sendETokensWithStrategy === 'function') {
         console.log(`Using wallet's native ${strategy} strategy for eTokens with token-aware analysis`)
-        return await wallet.sendETokensWithStrategy(tokenId, outputs, strategyOptions)
+        return await wallet.sendETokensWithStrategy(tokenId, outputs, { ...strategyOptions, ...txOptions })
       }
 
       // Check if wallet supports strategy configuration for eTokens
       if (wallet.setETokenSelectionStrategy && typeof wallet.setETokenSelectionStrategy === 'function') {
         console.log(`Configuring wallet to use ${strategy} strategy for eTokens with token-aware guidance`)
         await wallet.setETokenSelectionStrategy(strategy)
-        return await wallet.sendETokens(tokenId, outputs, 2.0)
+        return await wallet.sendETokens(tokenId, outputs, 2.0, txOptions)
       }
 
       // Fallback: Use analytics-influenced selection with token-aware analysis
@@ -849,7 +855,7 @@ class SendETokens {
 
       // Try the primary method with enhanced fee rate for token-aware strategy-based transactions
       try {
-        const txid = await wallet.sendETokens(tokenId, outputs, 2.5) // Higher fee for strategy-based selection
+        const txid = await wallet.sendETokens(tokenId, outputs, 2.5, txOptions) // Higher fee for strategy-based selection
         console.log(`Transaction completed using token-aware ${strategy} strategy`)
         return txid
       } catch (err) {
@@ -888,6 +894,11 @@ class SendETokens {
     console.log(`   To Address: ${flags.addr}`)
     console.log(`   Amount: ${flags.qty} ${tokenInfo.ticker}`)
     console.log(`   Token: ${tokenInfo.name} (${tokenInfo.protocol})`)
+    if (flags.finality) {
+      console.log('   Finality: CONFIRMED (Avalanche)')
+    } else {
+      console.log('   Finality: Pending (~10 min for block confirmation)')
+    }
     console.log()
     console.log('View this transaction on block explorers:')
     console.log(`   https://explorer.e.cash/tx/${txid}`)

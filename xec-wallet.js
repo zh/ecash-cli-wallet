@@ -119,6 +119,7 @@ program
   .option('-a, --addr <string>', 'destination address to send eTokens to')
   .option('-q, --qty <string>', 'quantity of eTokens to send')
   .option('--strategy <strategy>', 'UTXO selection strategy: efficient|privacy|security (requires analytics)')
+  .option('-f, --finality', 'Wait for Avalanche finality (~3 sec instant confirmation)')
   .action(sendETokens.run)
 
 // Define the msg-sign command

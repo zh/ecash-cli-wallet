@@ -158,6 +158,10 @@ class WalletCreate {
         advancedOptions.hdPath = hdPath
       }
 
+      // Add Avalanche options
+      const avalancheOptions = await this.walletUtil.getAvalancheOptions()
+      Object.assign(advancedOptions, avalancheOptions)
+
       // Create new XEC wallet instance - with or without provided mnemonic
       const xecWallet = mnemonic
         ? new this.MinimalXecWallet(mnemonic.trim().replace(/\s+/g, ' '), advancedOptions)

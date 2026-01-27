@@ -62,6 +62,12 @@ class ConfigManager {
         utxoCacheSize: 1000,
         analyticsCacheSize: 100,
         maxAnalyticsProcessingTime: 5000 // 5 seconds
+      },
+      avalanche: {
+        enabled: true,                    // Enable Avalanche features
+        defaultAwaitFinality: false,      // Wait for finality by default
+        finalityTimeout: 30000,           // 30 second timeout
+        showFinalityStatus: true          // Display finality in output
       }
     }
 
@@ -76,6 +82,7 @@ class ConfigManager {
     this.getWalletAnalyticsOptions = this.getWalletAnalyticsOptions.bind(this)
     this.isAnalyticsEnabled = this.isAnalyticsEnabled.bind(this)
     this.getEnvironmentOverrides = this.getEnvironmentOverrides.bind(this)
+    this.getAvalancheOptions = this.getAvalancheOptions.bind(this)
   }
 
   // Load global configuration from file
@@ -365,6 +372,29 @@ class ConfigManager {
       return {
         ...baseOptions,
         utxoAnalytics: { enabled: false }
+      }
+    }
+  }
+
+  // Get Avalanche options for MinimalXecWallet constructor
+  async getAvalancheOptions () {
+    try {
+      const config = await this.loadGlobalConfig()
+      return {
+        avalanche: {
+          enabled: config.avalanche.enabled,
+          defaultAwaitFinality: config.avalanche.defaultAwaitFinality,
+          finalityTimeout: config.avalanche.finalityTimeout
+        }
+      }
+    } catch (err) {
+      console.warn(`Warning: Could not get Avalanche options: ${err.message}`)
+      return {
+        avalanche: {
+          enabled: true,
+          defaultAwaitFinality: false,
+          finalityTimeout: 30000
+        }
       }
     }
   }

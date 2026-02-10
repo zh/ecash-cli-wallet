@@ -11,16 +11,10 @@ import sinon from 'sinon'
 import MsgVerify from '../../src/commands/msg-verify.js'
 
 describe('MsgVerify Unit Tests', function () {
-  let msgVerify, mockWalletUtil
+  let msgVerify
 
   beforeEach(function () {
     msgVerify = new MsgVerify()
-
-    // Mock WalletUtil
-    mockWalletUtil = {
-      loadWalletWithAnalytics: sinon.stub()
-    }
-    msgVerify.walletUtil = mockWalletUtil
   })
 
   afterEach(function () {
@@ -33,23 +27,19 @@ describe('MsgVerify Unit Tests', function () {
       expect(msgVerify.run).to.be.a('function')
       expect(msgVerify.validateFlags).to.be.a('function')
       expect(msgVerify.verify).to.be.a('function')
-      expect(msgVerify.walletUtil).to.exist
+      expect(msgVerify.MinimalXecWallet).to.exist
     })
   })
 
   describe('validateFlags', function () {
-    it('should validate method structure', function () {
+    it('should pass validation with valid flags', function () {
       const flags = {
         addr: 'ecash:qpqqptudwydz4a9e4hddacr4r7mgvhm9wvm5kdkttz',
         msg: 'Hello eCash!',
         sig: 'H123abc...'
       }
 
-      // Test that validateFlags method exists and has the expected structure
-      expect(msgVerify.validateFlags).to.be.a('function')
-      expect(flags.addr).to.include('ecash:')
-      expect(flags.msg).to.be.a('string')
-      expect(flags.sig).to.be.a('string')
+      expect(() => msgVerify.validateFlags(flags)).to.not.throw()
     })
 
     it('should throw error if address is missing', function () {
@@ -81,7 +71,7 @@ describe('MsgVerify Unit Tests', function () {
       }
 
       expect(() => msgVerify.validateFlags(flags))
-        .to.throw('Invalid XEC address format. Address must be in ecash: format.')
+        .to.throw('Invalid address:')
     })
 
     it('should throw error if message is missing', function () {
@@ -133,33 +123,43 @@ describe('MsgVerify Unit Tests', function () {
   })
 
   describe('verify method', function () {
-    it('should validate inputs and be callable', function () {
+    it('should create temp wallet and call verifyMessage', async function () {
       const flags = {
         addr: 'ecash:qpqqptudwydz4a9e4hddacr4r7mgvhm9wvm5kdkttz',
         msg: 'Hello eCash!',
         sig: 'H123abc...'
       }
 
-      // Test that the method exists and accepts valid inputs
-      // Actual verification logic will be tested through integration tests
-      expect(msgVerify.verify).to.be.a('function')
-      expect(flags.addr).to.include('ecash:')
-      expect(flags.msg).to.equal('Hello eCash!')
-      expect(flags.sig).to.be.a('string')
-    })
-
-    it('should handle error cases in method structure', function () {
-      // Test method structure for error handling
-      expect(msgVerify.verify).to.be.a('function')
-
-      // Verify that the method can handle various input types
-      const validFlags = {
-        addr: 'ecash:qpqqptudwydz4a9e4hddacr4r7mgvhm9wvm5kdkttz',
-        msg: 'Test message',
-        sig: 'TestSignature'
+      const mockVerifyMessage = sinon.stub().returns(true)
+      msgVerify.MinimalXecWallet = function MockWallet () {
+        this.walletInfoPromise = Promise.resolve()
+        this.verifyMessage = mockVerifyMessage
       }
 
-      expect(validFlags).to.have.all.keys('addr', 'msg', 'sig')
+      const result = await msgVerify.verify(flags)
+
+      expect(result).to.equal(true)
+      expect(mockVerifyMessage).to.have.been.calledWith(flags.msg, flags.sig, flags.addr)
+    })
+
+    it('should handle verification errors', async function () {
+      const flags = {
+        addr: 'ecash:qpqqptudwydz4a9e4hddacr4r7mgvhm9wvm5kdkttz',
+        msg: 'Hello eCash!',
+        sig: 'InvalidSig'
+      }
+
+      msgVerify.MinimalXecWallet = function MockWallet () {
+        this.walletInfoPromise = Promise.resolve()
+        this.verifyMessage = sinon.stub().throws(new Error('Invalid signature format'))
+      }
+
+      try {
+        await msgVerify.verify(flags)
+        expect.fail('Should have thrown an error')
+      } catch (err) {
+        expect(err.message).to.include('Message verification failed')
+      }
     })
   })
 
@@ -176,28 +176,38 @@ describe('MsgVerify Unit Tests', function () {
       consoleErrorSpy.restore()
     })
 
-    it('should handle console output correctly', function () {
+    it('should successfully run the verify command', async function () {
       const flags = {
         addr: 'ecash:qpqqptudwydz4a9e4hddacr4r7mgvhm9wvm5kdkttz',
         msg: 'Hello eCash!',
         sig: 'H123abc...'
       }
 
-      // Test that the run method exists and accepts the expected parameters
-      expect(msgVerify.run).to.be.a('function')
-      expect(flags).to.have.all.keys('addr', 'msg', 'sig')
+      sinon.stub(msgVerify, 'verify').resolves(true)
+
+      const result = await msgVerify.run(flags)
+
+      expect(result).to.equal(true)
+      expect(consoleLogSpy).to.have.been.calledWith('Verifying message signature...\n')
+      expect(consoleLogSpy).to.have.been.calledWith(`Message: ${flags.msg}`)
+      expect(consoleLogSpy).to.have.been.calledWith(`Signature: ${flags.sig}`)
+      expect(consoleLogSpy).to.have.been.calledWith(`Address: ${flags.addr}`)
+      expect(consoleLogSpy).to.have.been.calledWith('Signature verification result: VALID')
     })
 
-    it('should handle different return values', function () {
+    it('should handle invalid signature result', async function () {
       const flags = {
         addr: 'ecash:qpqqptudwydz4a9e4hddacr4r7mgvhm9wvm5kdkttz',
         msg: 'Hello eCash!',
         sig: 'InvalidSignature'
       }
 
-      // Test method structure and inputs
-      expect(msgVerify.run).to.be.a('function')
-      expect(flags).to.have.all.keys('addr', 'msg', 'sig')
+      sinon.stub(msgVerify, 'verify').resolves(false)
+
+      const result = await msgVerify.run(flags)
+
+      expect(result).to.equal(false)
+      expect(consoleLogSpy).to.have.been.calledWith('Signature verification result: INVALID')
     })
 
     it('should handle validation errors for missing signature', async function () {
@@ -260,7 +270,7 @@ describe('MsgVerify Unit Tests', function () {
       expect(result).to.equal(0)
       expect(consoleErrorSpy).to.have.been.calledWith(
         'Error in msg-verify:',
-        'Invalid XEC address format. Address must be in ecash: format.'
+        'Invalid address: Address must be an eCash address (ecash: prefix)'
       )
     })
   })

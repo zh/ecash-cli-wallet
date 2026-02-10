@@ -2,16 +2,13 @@
   Cryptographically sign a message with your private key.
 */
 
-// Global npm libraries
-import { signMsg, fromHex } from 'ecash-lib'
-
 // Local libraries
-import WalletUtil from '../lib/wallet-util.js'
+import { loadWallet } from '../lib/wallet-loader.js'
 
 class MsgSign {
   constructor () {
     // Encapsulate dependencies
-    this.walletUtil = new WalletUtil()
+    this.loadWallet = loadWallet
 
     // Bind 'this' object to all subfunctions
     this.run = this.run.bind(this)
@@ -26,10 +23,10 @@ class MsgSign {
       console.log(`Signing message with wallet '${flags.name}'...\n`)
 
       // Load wallet data
-      const walletData = await this.walletUtil.loadWalletWithAnalytics(flags.name)
+      const wallet = await this.loadWallet(flags.name)
 
       // Sign the message
-      const signObj = await this.sign(flags, walletData)
+      const signObj = await this.sign(flags, wallet)
 
       console.log('Message signed successfully!')
       console.log(`Signed message with key associated with address: ${signObj.xecAddress}`)
@@ -60,31 +57,16 @@ class MsgSign {
     return true
   }
 
-  async sign (flags, walletData) {
+  async sign (flags, wallet) {
     try {
-      // Get the wallet's private key in hex format
-      const privateKeyHex = walletData.wallet.privateKey
+      const signature = wallet.signMessage(flags.msg)
+      const xecAddress = wallet.walletInfo.xecAddress
 
-      if (!privateKeyHex) {
-        throw new Error('Wallet private key not found')
-      }
-
-      // Convert hex string to Uint8Array for ecash-lib
-      const privateKeyUint8Array = fromHex(privateKeyHex)
-
-      // Sign the message using ecash-lib
-      const signature = signMsg(flags.msg, privateKeyUint8Array)
-
-      // Get the wallet address
-      const xecAddress = walletData.wallet.xecAddress
-
-      const outObj = {
+      return {
         signature,
         xecAddress,
         message: flags.msg
       }
-
-      return outObj
     } catch (err) {
       console.error('Error in sign():', err.message)
       throw err

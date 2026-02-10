@@ -4,16 +4,15 @@
 */
 
 // Global npm libraries
-import { verifyMsg } from 'ecash-lib'
-import { isValidCashAddress } from 'ecashaddrjs'
+import MinimalXecWallet from 'minimal-xec-wallet'
 
 // Local libraries
-import WalletUtil from '../lib/wallet-util.js'
+import { validateAddress } from '../lib/validators.js'
 
 class MsgVerify {
   constructor () {
     // Encapsulate dependencies
-    this.walletUtil = new WalletUtil()
+    this.MinimalXecWallet = MinimalXecWallet
 
     // Bind 'this' object to all subfunctions
     this.run = this.run.bind(this)
@@ -62,24 +61,18 @@ class MsgVerify {
     }
 
     // Validate XEC address format after all required fields are present
-    if (!isValidCashAddress(addr)) {
-      throw new Error('Invalid XEC address format. Address must be in ecash: format.')
-    }
+    validateAddress(addr)
 
     return true
   }
 
   async verify (flags) {
     try {
-      // Use ecash-lib's verifyMsg function
-      // verifyMsg(message, signature, address, prefix?)
-      // The prefix parameter is optional and defaults to eCash message prefix
-      const result = verifyMsg(
-        flags.msg,
-        flags.sig,
-        flags.addr
-      )
+      const WalletClass = this.MinimalXecWallet
+      const tempWallet = new WalletClass()
+      await tempWallet.walletInfoPromise
 
+      const result = tempWallet.verifyMessage(flags.msg, flags.sig, flags.addr)
       return result
     } catch (err) {
       console.error('Error in verify():', err.message)

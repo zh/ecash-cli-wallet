@@ -11,16 +11,10 @@ import sinon from 'sinon'
 import MsgSign from '../../src/commands/msg-sign.js'
 
 describe('MsgSign Unit Tests', function () {
-  let msgSign, mockWalletUtil
+  let msgSign
 
   beforeEach(function () {
     msgSign = new MsgSign()
-
-    // Mock WalletUtil
-    mockWalletUtil = {
-      loadWalletWithAnalytics: sinon.stub()
-    }
-    msgSign.walletUtil = mockWalletUtil
   })
 
   afterEach(function () {
@@ -33,7 +27,7 @@ describe('MsgSign Unit Tests', function () {
       expect(msgSign.run).to.be.a('function')
       expect(msgSign.validateFlags).to.be.a('function')
       expect(msgSign.sign).to.be.a('function')
-      expect(msgSign.walletUtil).to.exist
+      expect(msgSign.loadWallet).to.be.a('function')
     })
   })
 
@@ -92,64 +86,33 @@ describe('MsgSign Unit Tests', function () {
   })
 
   describe('sign method', function () {
-    let mockWalletData
-
-    beforeEach(function () {
-      mockWalletData = {
-        wallet: {
-          privateKey: '5KN7MzqK5wt2TP1fQCYyHBtDrXdJuXbUzm4A9rKAteGu3Qi5CVR',
-          xecAddress: 'ecash:qpqqptudwydz4a9e4hddacr4r7mgvhm9wvm5kdkttz'
-        }
+    it('should call wallet.signMessage and return result', async function () {
+      const flags = { msg: 'Hello eCash!' }
+      const mockWallet = {
+        signMessage: sinon.stub().returns('base64SignatureString'),
+        walletInfo: { xecAddress: 'ecash:qpqqptudwydz4a9e4hddacr4r7mgvhm9wvm5kdkttz' }
       }
+
+      const result = await msgSign.sign(flags, mockWallet)
+
+      expect(result.signature).to.equal('base64SignatureString')
+      expect(result.xecAddress).to.equal('ecash:qpqqptudwydz4a9e4hddacr4r7mgvhm9wvm5kdkttz')
+      expect(result.message).to.equal('Hello eCash!')
+      expect(mockWallet.signMessage).to.have.been.calledWith('Hello eCash!')
     })
 
-    it('should validate inputs and call signing logic', async function () {
-      const flags = {
-        msg: 'Hello eCash!'
-      }
-
-      // Test that the method accepts valid inputs and has expected structure
-      // We'll test the actual signing logic through integration tests
-      expect(msgSign.sign).to.be.a('function')
-      expect(flags.msg).to.equal('Hello eCash!')
-      expect(mockWalletData.wallet.privateKey).to.exist
-      expect(mockWalletData.wallet.xecAddress).to.exist
-    })
-
-    it('should throw error if wallet private key is missing', async function () {
-      const flags = {
-        msg: 'Hello eCash!'
-      }
-      const walletDataWithoutKey = {
-        wallet: {
-          xecAddress: 'ecash:qpqqptudwydz4a9e4hddacr4r7mgvhm9wvm5kdkttz'
-        }
+    it('should throw error if signMessage throws', async function () {
+      const flags = { msg: 'Hello eCash!' }
+      const mockWallet = {
+        signMessage: sinon.stub().throws(new Error('Wallet not initialized or no private key available')),
+        walletInfo: { xecAddress: 'ecash:qpqqptudwydz4a9e4hddacr4r7mgvhm9wvm5kdkttz' }
       }
 
       try {
-        await msgSign.sign(flags, walletDataWithoutKey)
+        await msgSign.sign(flags, mockWallet)
         expect.fail('Should have thrown an error')
       } catch (err) {
-        expect(err.message).to.equal('Wallet private key not found')
-      }
-    })
-
-    it('should throw error if private key is falsy', async function () {
-      const flags = {
-        msg: 'Hello eCash!'
-      }
-      const walletDataWithEmptyKey = {
-        wallet: {
-          privateKey: '',
-          xecAddress: 'ecash:qpqqptudwydz4a9e4hddacr4r7mgvhm9wvm5kdkttz'
-        }
-      }
-
-      try {
-        await msgSign.sign(flags, walletDataWithEmptyKey)
-        expect.fail('Should have thrown an error')
-      } catch (err) {
-        expect(err.message).to.equal('Wallet private key not found')
+        expect(err.message).to.equal('Wallet not initialized or no private key available')
       }
     })
   })
@@ -172,25 +135,23 @@ describe('MsgSign Unit Tests', function () {
         name: 'test-wallet',
         msg: 'Hello eCash!'
       }
-      const mockWalletData = {
-        wallet: {
-          privateKey: '5KN7MzqK5wt2TP1fQCYyHBtDrXdJuXbUzm4A9rKAteGu3Qi5CVR',
-          xecAddress: 'ecash:qpqqptudwydz4a9e4hddacr4r7mgvhm9wvm5kdkttz'
-        }
+      const mockWallet = {
+        signMessage: sinon.stub().returns('base64SignatureString'),
+        walletInfo: { xecAddress: 'ecash:qpqqptudwydz4a9e4hddacr4r7mgvhm9wvm5kdkttz' }
       }
       const mockSignResult = {
         signature: 'H123abc...',
-        xecAddress: mockWalletData.wallet.xecAddress,
+        xecAddress: mockWallet.walletInfo.xecAddress,
         message: flags.msg
       }
 
-      mockWalletUtil.loadWalletWithAnalytics.resolves(mockWalletData)
+      msgSign.loadWallet = sinon.stub().resolves(mockWallet)
       sinon.stub(msgSign, 'sign').resolves(mockSignResult)
 
       const result = await msgSign.run(flags)
 
       expect(result).to.equal(true)
-      expect(mockWalletUtil.loadWalletWithAnalytics).to.have.been.calledWith(flags.name)
+      expect(msgSign.loadWallet).to.have.been.calledWith(flags.name)
       expect(consoleLogSpy).to.have.been.calledWith(`Signing message with wallet '${flags.name}'...\n`)
       expect(consoleLogSpy).to.have.been.calledWith('Message signed successfully!')
       expect(consoleLogSpy).to.have.been.calledWith(`Signed message with key associated with address: ${mockSignResult.xecAddress}`)
@@ -220,7 +181,7 @@ describe('MsgSign Unit Tests', function () {
         msg: 'Hello eCash!'
       }
 
-      mockWalletUtil.loadWalletWithAnalytics.rejects(new Error('Wallet not found'))
+      msgSign.loadWallet = sinon.stub().rejects(new Error('Wallet not found'))
 
       const result = await msgSign.run(flags)
 
@@ -233,14 +194,12 @@ describe('MsgSign Unit Tests', function () {
         name: 'test-wallet',
         msg: 'Hello eCash!'
       }
-      const mockWalletData = {
-        wallet: {
-          privateKey: '5KN7MzqK5wt2TP1fQCYyHBtDrXdJuXbUzm4A9rKAteGu3Qi5CVR',
-          xecAddress: 'ecash:qpqqptudwydz4a9e4hddacr4r7mgvhm9wvm5kdkttz'
-        }
+      const mockWallet = {
+        signMessage: sinon.stub().returns('base64SignatureString'),
+        walletInfo: { xecAddress: 'ecash:qpqqptudwydz4a9e4hddacr4r7mgvhm9wvm5kdkttz' }
       }
 
-      mockWalletUtil.loadWalletWithAnalytics.resolves(mockWalletData)
+      msgSign.loadWallet = sinon.stub().resolves(mockWallet)
       sinon.stub(msgSign, 'sign').rejects(new Error('Signing failed'))
 
       const result = await msgSign.run(flags)

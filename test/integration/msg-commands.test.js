@@ -133,7 +133,7 @@ describe('Message Commands Integration', function () {
       ])
 
       expect(result.code).to.equal(0) // Command returns 0 on validation error
-      expect(result.stderr).to.include('Invalid XEC address format')
+      expect(result.stderr).to.include('Invalid address:')
     })
 
     it('should verify invalid signature as INVALID', async function () {

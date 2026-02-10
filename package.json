@@ -28,7 +28,7 @@
   "license": "MIT",
   "dependencies": {
     "commander": "^12.1.0",
-    "minimal-xec-wallet": "^2.2.2",
+    "minimal-xec-wallet": "^2.2.3",
     "qrcode": "^1.5.4",
     "qrcode-terminal": "^0.12.0"
   },

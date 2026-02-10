@@ -64,10 +64,10 @@ class ConfigManager {
         maxAnalyticsProcessingTime: 5000 // 5 seconds
       },
       avalanche: {
-        enabled: true,                    // Enable Avalanche features
-        defaultAwaitFinality: false,      // Wait for finality by default
-        finalityTimeout: 30000,           // 30 second timeout
-        showFinalityStatus: true          // Display finality in output
+        enabled: true, // Enable Avalanche features
+        defaultAwaitFinality: false, // Wait for finality by default
+        finalityTimeout: 30000, // 30 second timeout
+        showFinalityStatus: true // Display finality in output
       }
     }
 

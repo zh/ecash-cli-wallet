@@ -48,7 +48,7 @@ const program = new Command()
 program
   .name('xec-wallet')
   .description('A command-line eCash (XEC) wallet using minimal-xec-wallet.')
-  .version('1.2.0')
+  .version('1.3.0')
 
 // Define the wallet-create command
 program

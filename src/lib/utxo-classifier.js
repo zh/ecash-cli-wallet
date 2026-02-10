@@ -21,6 +21,8 @@ class UtxoClassifier {
     this.getTokenInfo = this.getTokenInfo.bind(this)
     this.calculateTokenAwareHealth = this.calculateTokenAwareHealth.bind(this)
     this.getUtxoDisplayInfo = this.getUtxoDisplayInfo.bind(this)
+    this.classifyWalletUtxos = this.classifyWalletUtxos.bind(this)
+    this.filterForStrategy = this.filterForStrategy.bind(this)
   }
 
   /**
@@ -352,6 +354,56 @@ class UtxoClassifier {
       'standard-utxo': 'xec'
     }
     return categories[utxoType] || 'unknown'
+  }
+
+  /**
+   * Classify all UTXOs in a wallet with token awareness.
+   * Replaces the duplicated classification loop throughout the codebase.
+   * @param {Object} wallet - Initialized wallet instance
+   * @returns {Object} Classified UTXOs grouped by type
+   */
+  classifyWalletUtxos (wallet) {
+    const xecUtxos = wallet.utxos?.utxoStore?.xecUtxos || []
+    const classifiedUtxos = []
+
+    for (const utxo of xecUtxos) {
+      try {
+        const orig = wallet.utxos?.analytics?.classifier?.classifyUtxo?.(utxo) || {}
+        const enhanced = this.enhanceClassification(utxo, orig)
+        classifiedUtxos.push({
+          utxo,
+          enhancedClassification: enhanced,
+          hasToken: enhanced.hasToken,
+          isPureDust: enhanced.isPureDust,
+          utxoType: enhanced.utxoType
+        })
+      } catch {
+        continue
+      }
+    }
+
+    return {
+      all: classifiedUtxos,
+      pureXec: classifiedUtxos.filter(i => !i.hasToken),
+      tokens: classifiedUtxos.filter(i => i.hasToken),
+      pureDust: classifiedUtxos.filter(i => i.isPureDust),
+      usableXec: classifiedUtxos.filter(i => !i.hasToken && !i.isPureDust)
+    }
+  }
+
+  /**
+   * Filter classified UTXOs for a given strategy.
+   * @param {Object} classified - Result from classifyWalletUtxos()
+   * @param {String} strategy - 'efficient' | 'privacy' | 'security'
+   * @returns {Array} Filtered UTXO items suitable for the strategy
+   */
+  filterForStrategy (classified, strategy) {
+    return classified.pureXec.filter(item => {
+      if (item.isPureDust) return false
+      if (strategy === 'security') return item.utxo.value > 1000
+      if (strategy === 'privacy') return item.utxo.value > 546
+      return true // efficient + default
+    })
   }
 
   /**

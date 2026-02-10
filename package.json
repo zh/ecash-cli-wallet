@@ -1,6 +1,6 @@
 {
   "name": "ecash-cli-wallet",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "A command-line eCash (XEC) wallet using minimal-xec-wallet",
   "main": "xec-wallet.js",
   "type": "module",
@@ -30,7 +30,7 @@
     "bs58": "^6.0.0",
     "commander": "^12.1.0",
     "ecashaddrjs": "^2.0.0",
-    "minimal-xec-wallet": "^2.1.3",
+    "minimal-xec-wallet": "^2.2.1",
     "qrcode": "^1.5.4",
     "qrcode-terminal": "^0.12.0"
   },

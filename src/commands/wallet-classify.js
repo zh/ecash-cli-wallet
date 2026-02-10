@@ -3,18 +3,17 @@
 */
 
 // Global npm libraries
-import MinimalXecWallet from 'minimal-xec-wallet'
 import path from 'path'
 
 // Local libraries
 import WalletUtil from '../lib/wallet-util.js'
 import ConfigManager from '../lib/config-manager.js'
+import { loadWalletWithAnalytics } from '../lib/wallet-loader.js'
 import UtxoClassifier from '../lib/utxo-classifier.js'
 
 class WalletClassify {
   constructor () {
     // Encapsulate dependencies
-    this.MinimalXecWallet = MinimalXecWallet
     this.walletUtil = new WalletUtil()
     this.configManager = new ConfigManager()
     this.utxoClassifier = new UtxoClassifier()
@@ -110,18 +109,7 @@ class WalletClassify {
   async analyzeClassifications (walletName) {
     try {
       // Load wallet with analytics
-      const walletData = await this.walletUtil.loadWalletWithAnalytics(walletName)
-      const analyticsOptions = await this.walletUtil.getAnalyticsOptions(walletName)
-
-      // Create wallet instance with analytics
-      const xecWallet = new this.MinimalXecWallet(walletData.wallet.mnemonic, analyticsOptions)
-      await xecWallet.walletInfoPromise
-      await xecWallet.initialize()
-
-      // Check if analytics are available
-      if (!xecWallet.utxos.hasAnalytics || !xecWallet.utxos.hasAnalytics()) {
-        throw new Error('Analytics are not available for this wallet')
-      }
+      const xecWallet = await loadWalletWithAnalytics(walletName)
 
       // Get classification data
       const classifications = xecWallet.utxos.getUtxoClassifications()
